@@ -1,4 +1,5 @@
 import { Controls, ControlType } from './controls';
+import { NeuralNetwork } from './network';
 import { Sensor } from './sensor';
 import { getIntersection, Point2D, polysIntersect } from './utils';
 
@@ -7,6 +8,7 @@ export class Car {
 
     controls: Controls;
     sensor?: Sensor;
+    brain?: NeuralNetwork;
     polygon: Point2D[];
     damaged: boolean;
 
@@ -18,7 +20,7 @@ export class Car {
         public y: number,
         public height: number,
         public width: number,
-        controlType: ControlType,
+        public controlType: ControlType,
         public maxSpeed: number = 3,
         public acceleration: number = 0.2
     ) {
@@ -26,8 +28,9 @@ export class Car {
         this.polygon = [];
         this.damaged = false;
 
-        if (controlType != 'DUMMY') {
+        if (this.controlType === 'AI') {
             this.sensor = new Sensor(this);
+            this.brain = new NeuralNetwork([this.sensor.rayCount, 6, 4]);
         }
 
         this.speed = 0;
@@ -40,7 +43,19 @@ export class Car {
             this.polygon = this.createPolygon();
             this.damaged = this.assessDamage(roadBorders, traffic);
         }
-        this.sensor?.update(roadBorders, traffic);
+
+        if (this.sensor && this.brain) {
+            this.sensor.update(roadBorders, traffic);
+            const offsets = this.sensor.readings.map(s => (s === null ? 0 : 1 - s.offset));
+            const outputs = NeuralNetwork.feedForward(offsets, this.brain);
+
+            if (this.controlType === 'AI') {
+                this.controls.forward = !!outputs[0];
+                this.controls.left = !!outputs[1];
+                this.controls.right = !!outputs[2];
+                this.controls.reverse = !!outputs[3];
+            }
+        }
     }
 
     private assessDamage(roadBorders: Point2D[][], traffic: Car[]) {
@@ -119,9 +134,9 @@ export class Car {
         this.y -= Math.cos(this.angle) * this.speed * dt;
     }
 
-    draw(ctx: CanvasRenderingContext2D, color: string) {
+    draw(ctx: CanvasRenderingContext2D, color: string, drawSensors: boolean = false) {
         if (this.damaged) {
-            ctx.fillStyle = 'red';
+            ctx.fillStyle = 'gray';
         } else {
             ctx.fillStyle = color;
         }
@@ -134,6 +149,8 @@ export class Car {
         ctx.closePath();
         ctx.fill();
 
-        this.sensor?.draw(ctx);
+        if (drawSensors && this.sensor) {
+            this.sensor.draw(ctx);
+        }
     }
 }

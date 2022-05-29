@@ -1,4 +1,4 @@
-export type ControlType = 'KEYS' | 'DUMMY';
+export type ControlType = 'KEYS' | 'DUMMY' | 'AI';
 
 export class Controls {
     forward = false;
@@ -13,6 +13,8 @@ export class Controls {
                 break;
             case 'DUMMY':
                 this.forward = true;
+                break;
+            case 'AI':
                 break;
         }
     }

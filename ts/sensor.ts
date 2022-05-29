@@ -7,7 +7,7 @@ export class Sensor {
 
     constructor(
         private car: Car,
-        private rayCount: number = 7,
+        public rayCount: number = 7,
         private rayLength: number = 150,
         private raySpread: number = Math.PI / 2
     ) {
