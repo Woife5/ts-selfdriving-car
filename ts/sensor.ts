@@ -15,12 +15,12 @@ export class Sensor {
         this.readings = [];
     }
 
-    update(roadBorders: Point2D[][]) {
+    update(roadBorders: Point2D[][], traffic: Car[]) {
         this.castRays();
 
         this.readings = [];
         for (let i = 0; i < this.rays.length; i++) {
-            this.readings.push(this.getReading(this.rays[i], roadBorders));
+            this.readings.push(this.getReading(this.rays[i], roadBorders, traffic));
         }
     }
 
@@ -62,7 +62,7 @@ export class Sensor {
         }
     }
 
-    private getReading(ray: Point2D[], roadBorders: Point2D[][]) {
+    private getReading(ray: Point2D[], roadBorders: Point2D[][], traffic: Car[]) {
         let touches: Point2DWithOffset[] = [];
 
         for (const border of roadBorders) {
@@ -70,6 +70,21 @@ export class Sensor {
 
             if (touch) {
                 touches.push(touch);
+            }
+        }
+
+        for (const car of traffic) {
+            for (let j = 0; j < car.polygon.length; j++) {
+                const touch = getIntersection(
+                    ray[0],
+                    ray[1],
+                    car.polygon[j],
+                    car.polygon[(j + 1) % car.polygon.length]
+                );
+
+                if (touch) {
+                    touches.push(touch);
+                }
             }
         }
 

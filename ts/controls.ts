@@ -1,11 +1,20 @@
+export type ControlType = 'KEYS' | 'DUMMY';
+
 export class Controls {
     forward = false;
     left = false;
     right = false;
     reverse = false;
 
-    constructor() {
-        this.addKeyboardListeners();
+    constructor(controlType: ControlType) {
+        switch (controlType) {
+            case 'KEYS':
+                this.addKeyboardListeners();
+                break;
+            case 'DUMMY':
+                this.forward = true;
+                break;
+        }
     }
 
     private addKeyboardListeners() {

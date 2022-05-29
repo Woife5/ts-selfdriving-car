@@ -30,3 +30,21 @@ export function getIntersection(A: Point2D, B: Point2D, C: Point2D, D: Point2D) 
 
     return null;
 }
+
+export function polysIntersect(poly1: Point2D[], poly2: Point2D[]) {
+    for (let i = 0; i < poly1.length; i++) {
+        const A = poly1[i];
+        const B = poly1[(i + 1) % poly1.length];
+
+        for (let j = 0; j < poly2.length; j++) {
+            const C = poly2[j];
+            const D = poly2[(j + 1) % poly2.length];
+
+            if (getIntersection(A, B, C, D)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}

@@ -1,32 +1,62 @@
-import { Controls } from './controls';
+import { Controls, ControlType } from './controls';
 import { Sensor } from './sensor';
-import { Point2D } from './utils';
+import { getIntersection, Point2D, polysIntersect } from './utils';
 
 export class Car {
+    static readonly friction = 0.9;
+
     controls: Controls;
-    sensor: Sensor;
+    sensor?: Sensor;
     polygon: Point2D[];
+    damaged: boolean;
+
+    speed: number;
+    angle: number;
 
     constructor(
         public x: number,
         public y: number,
         public height: number,
         public width: number,
-        public speed: number = 0,
-        public acceleration: number = 0.2,
+        controlType: ControlType,
         public maxSpeed: number = 3,
-        public friction: number = 0.9,
-        public angle: number = 0
+        public acceleration: number = 0.2
     ) {
-        this.controls = new Controls();
-        this.sensor = new Sensor(this);
+        this.controls = new Controls(controlType);
         this.polygon = [];
+        this.damaged = false;
+
+        if (controlType != 'DUMMY') {
+            this.sensor = new Sensor(this);
+        }
+
+        this.speed = 0;
+        this.angle = 0;
     }
 
-    update(dt: number, roadBorders: Point2D[][]) {
-        this.move(dt / 5);
-        this.polygon = this.createPolygon();
-        this.sensor.update(roadBorders);
+    update(dt: number, roadBorders: Point2D[][], traffic: Car[]) {
+        if (!this.damaged) {
+            this.move(dt / 5);
+            this.polygon = this.createPolygon();
+            this.damaged = this.assessDamage(roadBorders, traffic);
+        }
+        this.sensor?.update(roadBorders, traffic);
+    }
+
+    private assessDamage(roadBorders: Point2D[][], traffic: Car[]) {
+        for (let i = 0; i < roadBorders.length; i++) {
+            const intersection = polysIntersect(this.polygon, roadBorders[i]);
+            if (intersection) {
+                return true;
+            }
+        }
+        for (let i = 0; i < traffic.length; i++) {
+            const intersection = polysIntersect(this.polygon, traffic[i].polygon);
+            if (intersection) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private createPolygon() {
@@ -74,7 +104,7 @@ export class Car {
             this.speed = -this.maxSpeed;
         }
 
-        this.speed *= this.friction;
+        this.speed *= Car.friction;
 
         const flip = this.speed < 0 ? -1 : 1;
         if (this.controls.left) {
@@ -89,7 +119,13 @@ export class Car {
         this.y -= Math.cos(this.angle) * this.speed * dt;
     }
 
-    draw(ctx: CanvasRenderingContext2D) {
+    draw(ctx: CanvasRenderingContext2D, color: string) {
+        if (this.damaged) {
+            ctx.fillStyle = 'red';
+        } else {
+            ctx.fillStyle = color;
+        }
+
         ctx.beginPath();
         ctx.moveTo(this.polygon[0].x, this.polygon[0].y);
         for (let i = 1; i < this.polygon.length; i++) {
@@ -98,6 +134,6 @@ export class Car {
         ctx.closePath();
         ctx.fill();
 
-        this.sensor.draw(ctx);
+        this.sensor?.draw(ctx);
     }
 }
