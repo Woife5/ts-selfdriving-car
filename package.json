@@ -1,0 +1,8 @@
+{
+    "dependencies": {
+        "esbuild": "^0.14.41"
+    },
+    "scripts": {
+        "watch": "esbuild --watch ts/main.ts --bundle --outdir=."
+    }
+}
