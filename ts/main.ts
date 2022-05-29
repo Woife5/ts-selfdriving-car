@@ -1,4 +1,5 @@
 import { Car } from './car';
+import { NeuralNetwork } from './network';
 import { Road } from './road';
 import { Visualizr } from './visualizr';
 
@@ -12,12 +13,7 @@ const networkCtx = networkCanvas.getContext('2d')!;
 
 const road = new Road(carCanvas.width / 2, carCanvas.width * 0.9, 3);
 
-const cars = generateCars(100);
-
-const traffic: Car[] = [new Car(road.getLaneCenter(1), -300, 50, 30, 'DUMMY', 0.7)];
-
-window.requestAnimationFrame(animate);
-
+const cars = generateCars(1000);
 function generateCars(number: number) {
     const cars: Car[] = [];
     for (let i = 0; i < number; i++) {
@@ -26,10 +22,27 @@ function generateCars(number: number) {
     return cars;
 }
 
+const traffic: Car[] = [
+    new Car(road.getLaneCenter(1), -500, 50, 30, 'DUMMY', 0.7),
+    new Car(road.getLaneCenter(0), -300, 50, 30, 'DUMMY', 0.7),
+    new Car(road.getLaneCenter(2), -300, 50, 30, 'DUMMY', 0.7),
+    new Car(road.getLaneCenter(0), -800, 50, 30, 'DUMMY', 0.7),
+    new Car(road.getLaneCenter(2), -800, 50, 30, 'DUMMY', 0.7),
+    new Car(road.getLaneCenter(2), -1000, 50, 30, 'DUMMY', 0.7),
+    new Car(road.getLaneCenter(1), -1000, 50, 30, 'DUMMY', 0.7),
+];
+
+window.requestAnimationFrame(animate);
+
 let bestCar: Car = cars[0];
 
 if (localStorage.getItem('bestBrain')) {
-    bestCar.brain = JSON.parse(localStorage.getItem('bestBrain')!);
+    for (let i = 0; i < cars.length; i++) {
+        cars[i].brain = JSON.parse(localStorage.getItem('bestBrain')!);
+        if (i != 0) {
+            NeuralNetwork.mutate(cars[i].brain!, 0.1);
+        }
+    }
 }
 
 document.getElementById('save-button')?.addEventListener('click', save);
