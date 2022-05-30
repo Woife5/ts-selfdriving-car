@@ -5,9 +5,9 @@ export class Visualizr {
     static drawNetwork(ctx: CanvasRenderingContext2D, network: NeuralNetwork) {
         const margin = 50;
         const left = margin;
-        const top = margin;
+        const top = margin + 50;
         const width = ctx.canvas.width - margin * 2;
-        const height = ctx.canvas.height - margin * 2;
+        const height = ctx.canvas.height - margin * 2 - 50;
 
         const levelHeight = height / network.levels.length;
 
@@ -26,6 +26,13 @@ export class Visualizr {
                 i == network.levels.length - 1 ? ['🠉', '🠈', '🠊', '🠋'] : []
             );
         }
+
+        ctx.save();
+        ctx.font = '10px Arial';
+        ctx.fillStyle = 'white';
+        ctx.fillText('Fitness', ctx.canvas.width / 2, 35);
+        ctx.fillText(network.fitness.toFixed(0), ctx.canvas.width / 2, 50);
+        ctx.restore();
     }
 
     static drawLevel(ctx: any, level: any, left: any, top: any, width: any, height: any, outputLabels: any) {

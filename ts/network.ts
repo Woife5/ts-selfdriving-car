@@ -2,9 +2,11 @@ import { lerp } from './utils';
 
 export class NeuralNetwork {
     levels: Level[];
+    fitness: number;
 
     constructor(neuronCounts: number[]) {
         this.levels = [];
+        this.fitness = 0;
 
         for (let i = 0; i < neuronCounts.length - 1; i++) {
             this.levels.push(new Level(neuronCounts[i], neuronCounts[i + 1]));

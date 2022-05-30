@@ -1,6 +1,7 @@
 import { Car } from './car';
 import { NeuralNetwork } from './network';
 import { Road } from './road';
+import { randomInt } from './utils';
 import { Visualizr } from './visualizr';
 
 const carCanvas = document.getElementById('carCanvas') as HTMLCanvasElement;
@@ -22,15 +23,7 @@ function generateCars(number: number) {
     return cars;
 }
 
-const traffic: Car[] = [
-    new Car(road.getLaneCenter(1), -500, 50, 30, 'DUMMY', 0.7),
-    new Car(road.getLaneCenter(0), -300, 50, 30, 'DUMMY', 0.7),
-    new Car(road.getLaneCenter(2), -300, 50, 30, 'DUMMY', 0.7),
-    new Car(road.getLaneCenter(0), -800, 50, 30, 'DUMMY', 0.7),
-    new Car(road.getLaneCenter(2), -800, 50, 30, 'DUMMY', 0.7),
-    new Car(road.getLaneCenter(2), -1000, 50, 30, 'DUMMY', 0.7),
-    new Car(road.getLaneCenter(1), -1000, 50, 30, 'DUMMY', 0.7),
-];
+const traffic = generateRandomDummys(50);
 
 window.requestAnimationFrame(animate);
 
@@ -40,13 +33,20 @@ if (localStorage.getItem('bestBrain')) {
     for (let i = 0; i < cars.length; i++) {
         cars[i].brain = JSON.parse(localStorage.getItem('bestBrain')!);
         if (i != 0) {
-            NeuralNetwork.mutate(cars[i].brain!, 0.1);
+            NeuralNetwork.mutate(cars[i].brain!, 0.05);
         }
     }
 }
 
+if (localStorage.getItem('autorefresh')) {
+    setAutoRefresh(true);
+} else {
+    setAutoRefresh(false);
+}
+
 document.getElementById('save-button')?.addEventListener('click', save);
 document.getElementById('delete-button')?.addEventListener('click', discard);
+document.getElementById('autorefresh-button')?.addEventListener('click', toggleAutorefresh);
 
 function save() {
     localStorage.setItem('bestBrain', JSON.stringify(bestCar.brain));
@@ -54,6 +54,26 @@ function save() {
 
 function discard() {
     localStorage.removeItem('bestBrain');
+}
+
+function toggleAutorefresh() {
+    setAutoRefresh(!localStorage.getItem('autorefresh'));
+}
+
+let refreshTimeout: number;
+function setAutoRefresh(value: boolean) {
+    if (value) {
+        localStorage.setItem('autorefresh', 'true');
+        document.getElementById('autorefresh-button')!.innerText = '🔃';
+        refreshTimeout = window.setTimeout(() => {
+            save();
+            window.location.reload();
+        }, 1000 * 60);
+    } else {
+        localStorage.removeItem('autorefresh');
+        document.getElementById('autorefresh-button')!.innerText = '⛔';
+        window.clearTimeout(refreshTimeout);
+    }
 }
 
 let lastTime = 0;
@@ -64,7 +84,7 @@ function animate(timestamp: number) {
     carCanvas.height = window.innerHeight;
     networkCanvas.height = window.innerHeight;
 
-    bestCar = cars.find(c => c.y === Math.min(...cars.map(c => c.y)))!;
+    bestCar = cars.find(c => c.brain!.fitness === Math.max(...cars.map(c => c.brain!.fitness)))!;
 
     for (const car of traffic) {
         car.update(dt, road.borders, []);
@@ -92,4 +112,19 @@ function animate(timestamp: number) {
     networkCtx.lineDashOffset = -timestamp / 50;
     Visualizr.drawNetwork(networkCtx, bestCar.brain!);
     window.requestAnimationFrame(animate);
+}
+
+function generateRandomDummys(number: number) {
+    const dummys: Car[] = [];
+    for (let i = 0; i < number; i++) {
+        const lane = randomInt(0, road.laneCount);
+        dummys.push(new Car(road.getLaneCenter(lane), -200 + -150 * i, 50, 30, 'DUMMY', 0.6));
+
+        if (Math.random() > 0.5 && i < number - 1) {
+            dummys.push(new Car(road.getLaneCenter(lane + 1), -200 + -150 * i, 50, 30, 'DUMMY', 0.6));
+            i += 1;
+        }
+    }
+
+    return dummys;
 }

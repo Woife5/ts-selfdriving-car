@@ -31,6 +31,10 @@ export function getIntersection(A: Point2D, B: Point2D, C: Point2D, D: Point2D) 
     return null;
 }
 
+export function randomInt(min: number, max: number) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 export function polysIntersect(poly1: Point2D[], poly2: Point2D[]) {
     for (let i = 0; i < poly1.length; i++) {
         const A = poly1[i];

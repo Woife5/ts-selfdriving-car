@@ -1,7 +1,7 @@
 import { Controls, ControlType } from './controls';
 import { NeuralNetwork } from './network';
 import { Sensor } from './sensor';
-import { getIntersection, Point2D, polysIntersect } from './utils';
+import { Point2D, polysIntersect } from './utils';
 
 export class Car {
     static readonly friction = 0.9;
@@ -14,6 +14,10 @@ export class Car {
 
     speed: number;
     angle: number;
+
+    private lastY = 0;
+    private behind = 0;
+    private lastBehind = 0;
 
     constructor(
         public x: number,
@@ -39,12 +43,42 @@ export class Car {
 
     update(dt: number, roadBorders: Point2D[][], traffic: Car[]) {
         if (!this.damaged) {
+            this.behind = traffic.filter(c => c.y > this.y).length;
             this.move(dt / 5);
             this.polygon = this.createPolygon();
             this.damaged = this.assessDamage(roadBorders, traffic);
         }
 
         if (this.sensor && this.brain) {
+            if (!this.damaged) {
+                //reward distance
+                this.brain.fitness += (this.lastY - this.y) / 5;
+                this.lastY = this.y;
+
+                // reward overtaking
+                if (this.behind !== this.lastBehind) {
+                    this.brain.fitness += (this.behind - this.lastBehind) * 300;
+                    this.lastBehind = this.behind;
+                }
+
+                // discourage slowness
+                if (this.speed < this.maxSpeed * 0.5) {
+                    this.brain.fitness -= (this.maxSpeed - this.speed) * 2;
+                }
+
+                // discorage forward+backwards at the same time
+                if (this.controls.forward && this.controls.reverse) {
+                    this.brain.fitness -= 10;
+                }
+
+                // discorage left+right at the same time
+                if (this.controls.left && this.controls.right) {
+                    this.brain.fitness -= 10;
+                }
+            } else {
+                this.brain.fitness -= 300;
+            }
+
             this.sensor.update(roadBorders, traffic);
             const offsets = this.sensor.readings.map(s => (s === null ? 0 : 1 - s.offset));
             const outputs = NeuralNetwork.feedForward(offsets, this.brain);
